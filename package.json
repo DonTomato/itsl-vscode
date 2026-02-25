@@ -13,8 +13,11 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [{
-      "command": "itsl.helloWorld",
-      "title": "Hello World"
+      "command": "itsl.check",
+      "title": "ITSL: Check Project Root"
+    }, {
+      "command": "itsl.fastbuild",
+      "title": "ITSL: Fastbuild"
     }]
   },
   "scripts": {
