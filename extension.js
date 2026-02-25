@@ -1,8 +1,10 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const { globSync } = require('glob');
 
 const PROJECT_NAME = 'itslearning-ui';
+const ITSL_PREFIX = '@its-ui/';
 
 /**
  * Walks up the directory tree from the current workspace folder
@@ -41,6 +43,40 @@ function findProjectRoot() {
 }
 
 /**
+ * Scans the project root for all package.json files and returns info about each sub-project.
+ * @param {string} root - absolute path to the monorepo root
+ * @returns {{ packageName: string, hasBuiltScript: boolean }[]}
+ */
+function getProjects(root) {
+	const files = globSync('**/package.json', {
+		cwd: root,
+		absolute: true,
+		nodir: true,
+		ignore: ['**/node_modules/**', '**/dist/**'],
+	});
+
+	const result = [];
+
+	for (const fileName of files) {
+		try {
+			const packageData = JSON.parse(fs.readFileSync(fileName, 'utf8'));
+			const packageName = packageData.name;
+			if (!packageName || !packageName.startsWith(ITSL_PREFIX)) {
+				continue;
+			}
+			result.push({
+				packageName,
+				hasBuildScript: !!(packageData.scripts && 'build' in packageData.scripts),
+			});
+		} catch {
+			// skip malformed package.json
+		}
+	}
+
+	return result;
+}
+
+/**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
@@ -67,6 +103,34 @@ function activate(context) {
 			const terminal = vscode.window.createTerminal({ name: 'ITSL: Fastbuild', cwd: root });
 			terminal.show();
 			terminal.sendText('yarn fastbuild:all');
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('itsl.buildApp', async function () {
+			const root = findProjectRoot();
+			if (!root) {
+				vscode.window.showErrorMessage('Not inside an itslearning-ui project. Open a folder within the project and try again.');
+				return;
+			}
+
+			const projects = getProjects(root).filter(p => p.hasBuildScript);
+			if (projects.length === 0) {
+				vscode.window.showWarningMessage('No buildable projects found in the monorepo.');
+				return;
+			}
+
+			const picked = await vscode.window.showQuickPick(
+				projects.map(p => p.packageName),
+				{ placeHolder: 'Select a project to build' }
+			);
+			if (!picked) {
+				return; // user cancelled
+			}
+
+			const terminal = vscode.window.createTerminal({ name: `ITSL: Build ${picked}`, cwd: root });
+			terminal.show();
+			terminal.sendText(`yarn workspace ${picked} build`);
 		})
 	);
 }

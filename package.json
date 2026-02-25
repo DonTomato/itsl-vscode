@@ -18,12 +18,18 @@
     }, {
       "command": "itsl.fastbuild",
       "title": "ITSL: Fastbuild"
+    }, {
+      "command": "itsl.buildApp",
+      "title": "ITSL: Build App"
     }]
   },
   "scripts": {
     "lint": "eslint .",
     "pretest": "yarn run lint",
     "test": "vscode-test"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
   },
   "devDependencies": {
     "@types/vscode": "^1.109.0",
