@@ -21,6 +21,9 @@
     }, {
       "command": "itsl.buildApp",
       "title": "ITSL: Build App"
+    }, {
+      "command": "itsl.extractTerms",
+      "title": "ITSL: Extract Terms"
     }]
   },
   "scripts": {

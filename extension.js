@@ -167,6 +167,66 @@ function activate(context) {
 			terminal.sendText(`yarn workspace ${packageName} build`);
 		})
 	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('itsl.extractTerms', async function () {
+			const root = findProjectRoot();
+			if (!root) {
+				vscode.window.showErrorMessage('Not inside an itslearning-ui project. Open a folder within the project and try again.');
+				return;
+			}
+
+			const projects = getProjects(root);
+			if (projects.length === 0) {
+				vscode.window.showWarningMessage('No projects found in the monorepo.');
+				return;
+			}
+
+			const sorted = projects
+				.map(p => ({
+					packageName: p.packageName,
+					shortName: p.packageName.replace(ITSL_PREFIX, ''),
+				}))
+				.sort((a, b) => a.shortName.localeCompare(b.shortName));
+
+			const recentKeys = context.workspaceState.get('itsl.recentTerms', []);
+			const recentItems = recentKeys
+				.map(name => sorted.find(p => p.packageName === name))
+				.filter(Boolean);
+
+			/** @type {vscode.QuickPickItem[]} */
+			const items = [];
+
+			if (recentItems.length > 0) {
+				items.push({ label: 'Recent', kind: vscode.QuickPickItemKind.Separator });
+				for (const p of recentItems) {
+					items.push({ label: p.shortName, description: p.packageName });
+				}
+				items.push({ label: 'All projects', kind: vscode.QuickPickItemKind.Separator });
+			}
+
+			for (const p of sorted) {
+				items.push({ label: p.shortName, description: p.packageName });
+			}
+
+			const picked = await vscode.window.showQuickPick(items, {
+				placeHolder: 'Select a project to extract terms from',
+			});
+			if (!picked) {
+				return;
+			}
+
+			const shortName = picked.label;
+			const packageName = picked.description;
+
+			const updatedRecent = [packageName, ...recentKeys.filter(n => n !== packageName)].slice(0, 3);
+			await context.workspaceState.update('itsl.recentTerms', updatedRecent);
+
+			const terminal = vscode.window.createTerminal({ name: `ITSL: Terms ${shortName}`, cwd: root });
+			terminal.show();
+			terminal.sendText(`yarn terms ${shortName} -v`);
+		})
+	);
 }
 
 function deactivate() {}
