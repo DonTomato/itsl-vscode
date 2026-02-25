@@ -25,8 +25,14 @@
       "command": "itsl.extractTerms",
       "title": "ITSL: Extract Terms"
     }, {
+      "command": "itsl.extractTermsVerbose",
+      "title": "ITSL: Extract Terms (Verbose)"
+    }, {
       "command": "itsl.updateTranslations",
       "title": "ITSL: Update Translations"
+    }, {
+      "command": "itsl.updateTranslationsVerbose",
+      "title": "ITSL: Update Translations (Verbose)"
     }]
   },
   "scripts": {

@@ -198,6 +198,29 @@ function activate(context) {
 
 			const terminal = vscode.window.createTerminal({ name: `ITSL: Terms ${picked.shortName}`, cwd: root });
 			terminal.show();
+			terminal.sendText(`yarn terms ${picked.shortName}`);
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('itsl.extractTermsVerbose', async function () {
+			const root = findProjectRoot();
+			if (!root) {
+				vscode.window.showErrorMessage('Not inside an itslearning-ui project. Open a folder within the project and try again.');
+				return;
+			}
+
+			const projects = getProjects(root);
+			if (projects.length === 0) {
+				vscode.window.showWarningMessage('No projects found in the monorepo.');
+				return;
+			}
+
+			const picked = await pickProject(context, projects, 'Select a project to extract terms from (verbose)');
+			if (!picked) return;
+
+			const terminal = vscode.window.createTerminal({ name: `ITSL: Terms ${picked.shortName}`, cwd: root });
+			terminal.show();
 			terminal.sendText(`yarn terms ${picked.shortName} -v`);
 		})
 	);
@@ -217,6 +240,29 @@ function activate(context) {
 			}
 
 			const picked = await pickProject(context, projects, 'Select a project to update translations');
+			if (!picked) return;
+
+			const terminal = vscode.window.createTerminal({ name: `ITSL: Translations ${picked.shortName}`, cwd: root });
+			terminal.show();
+			terminal.sendText(`yarn update:translations ${picked.shortName}`);
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('itsl.updateTranslationsVerbose', async function () {
+			const root = findProjectRoot();
+			if (!root) {
+				vscode.window.showErrorMessage('Not inside an itslearning-ui project. Open a folder within the project and try again.');
+				return;
+			}
+
+			const projects = getProjects(root);
+			if (projects.length === 0) {
+				vscode.window.showWarningMessage('No projects found in the monorepo.');
+				return;
+			}
+
+			const picked = await pickProject(context, projects, 'Select a project to update translations (verbose)');
 			if (!picked) return;
 
 			const terminal = vscode.window.createTerminal({ name: `ITSL: Translations ${picked.shortName}`, cwd: root });
