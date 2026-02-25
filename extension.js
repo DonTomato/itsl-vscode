@@ -120,17 +120,51 @@ function activate(context) {
 				return;
 			}
 
-			const picked = await vscode.window.showQuickPick(
-				projects.map(p => p.packageName),
-				{ placeHolder: 'Select a project to build' }
-			);
+			// Sort alphabetically by short name (without prefix)
+			const sorted = projects
+				.map(p => ({
+					packageName: p.packageName,
+					shortName: p.packageName.replace(ITSL_PREFIX, ''),
+				}))
+				.sort((a, b) => a.shortName.localeCompare(b.shortName));
+
+			// Recent projects (last 3 built)
+			const recentKeys = context.workspaceState.get('itsl.recentBuilds', []);
+			const recentItems = recentKeys
+				.map(name => sorted.find(p => p.packageName === name))
+				.filter(Boolean);
+
+			/** @type {vscode.QuickPickItem[]} */
+			const items = [];
+
+			if (recentItems.length > 0) {
+				items.push({ label: 'Recent', kind: vscode.QuickPickItemKind.Separator });
+				for (const p of recentItems) {
+					items.push({ label: p.shortName, description: p.packageName });
+				}
+				items.push({ label: 'All projects', kind: vscode.QuickPickItemKind.Separator });
+			}
+
+			for (const p of sorted) {
+				items.push({ label: p.shortName, description: p.packageName });
+			}
+
+			const picked = await vscode.window.showQuickPick(items, {
+				placeHolder: 'Select a project to build',
+			});
 			if (!picked) {
 				return; // user cancelled
 			}
 
-			const terminal = vscode.window.createTerminal({ name: `ITSL: Build ${picked}`, cwd: root });
+			const packageName = picked.description;
+
+			// Update recent list (keep last 3, most recent first)
+			const updatedRecent = [packageName, ...recentKeys.filter(n => n !== packageName)].slice(0, 3);
+			await context.workspaceState.update('itsl.recentBuilds', updatedRecent);
+
+			const terminal = vscode.window.createTerminal({ name: `ITSL: Build ${picked.label}`, cwd: root });
 			terminal.show();
-			terminal.sendText(`yarn workspace ${picked} build`);
+			terminal.sendText(`yarn workspace ${packageName} build`);
 		})
 	);
 }
