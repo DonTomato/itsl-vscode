@@ -24,6 +24,9 @@
     }, {
       "command": "itsl.extractTerms",
       "title": "ITSL: Extract Terms"
+    }, {
+      "command": "itsl.updateTranslations",
+      "title": "ITSL: Update Translations"
     }]
   },
   "scripts": {
